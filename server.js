@@ -1,39 +1,51 @@
 
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
-// Sample Data
-let products = [
-    { id: 1, name: "Laptop", price: 1200, stock: 10 },
-    { id: 2, name: "Phone", price: 800, stock: 15 },
-    { id: 3, name: "Headphones", price: 150, stock: 30 }
-];
-
+const filePath = path.join(__dirname, 'product.json');
 let cart = [];
 
-// 1. GET all products
+// Helper functions to handle the JSON file database
+const readData = () => {
+    const data = fs.readFileSync(filePath, 'utf8');
+    return JSON.parse(data);
+};
+
+const writeData = (data) => {
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+};
+
+// 1. GET all products from JSON file
 app.get('/api/products', (req, res) => {
+    const products = readData();
     res.json(products);
 });
 
-// 2. POST - Add a new product (Lecturer Request)
+// 2. POST - Add a new product into JSON file
 app.post('/api/products', (req, res) => {
+    const products = readData();
     const { name, price, stock } = req.body;
+    
     const newProduct = {
-        id: products.length + 1,
+        id: products.length > 0 ? products[products.length - 1].id + 1 : 1,
         name,
         price,
         stock
     };
+    
     products.push(newProduct);
-    res.status(201).json({ message: "Product added successfully", product: newProduct });
+    writeData(products);
+    res.status(201).json({ message: "Product added to database", product: newProduct });
 });
 
-// 3. PATCH - Update an existing product's details (Lecturer Request)
+// 3. PATCH - Update product details inside JSON file
 app.patch('/api/products/:id', (req, res) => {
+    const products = readData();
     const id = parseInt(req.params.id);
     const product = products.find(p => p.id === id);
 
@@ -44,22 +56,26 @@ app.patch('/api/products/:id', (req, res) => {
     if (price) product.price = price;
     if (stock) product.stock = stock;
 
-    res.json({ message: "Product updated successfully", product });
+    writeData(products);
+    res.json({ message: "Product updated in database", product });
 });
 
-// 4. DELETE - Remove a product from the database (Lecturer Request)
+// 4. DELETE - Remove a product completely from JSON file
 app.delete('/api/products/:id', (req, res) => {
+    let products = readData();
     const id = parseInt(req.params.id);
-    const productIndex = products.findIndex(p => p.id === id);
+    const productExists = products.some(p => p.id === id);
 
-    if (productIndex === -1) return res.status(404).json({ message: "Product not found" });
+    if (!productExists) return res.status(404).json({ message: "Product not found" });
 
-    const deletedProduct = products.splice(productIndex, 1);
-    res.json({ message: "Product deleted successfully", product: deletedProduct[0] });
+    products = products.filter(p => p.id !== id);
+    writeData(products);
+    res.json({ message: "Product deleted from database successfully" });
 });
 
-// 5. POST - Add an item to the cart
+// 5. POST - Add an item to the shopping cart
 app.post('/api/cart', (req, res) => {
+    const products = readData();
     const { productId, quantity } = req.body;
     const product = products.find(p => p.id === productId);
     
