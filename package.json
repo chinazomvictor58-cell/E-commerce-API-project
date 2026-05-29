@@ -1,8 +1,13 @@
+
 {
   "name": "ecommerce-api-project",
   "version": "1.0.0",
   "description": "200L Computer Science API Project",
-  "main": "server.js",
-  "scripts": { "start": "node server.js" },
-  "dependencies": { "express": "^4.19.2" }
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
 }
